@@ -67,14 +67,14 @@ void loop() {
         // Make sure the event is calibrated gyro data
         if (sensorValue.sensorId == SH2_GYROSCOPE_CALIBRATED) {
           // Extract angular velocity components (rad/s)
-          float wx = sensorValue.un.gyroscope.x;
-          float wy = sensorValue.un.gyroscope.y;
+          float wx = -sensorValue.un.gyroscope.x;
+          float wy = -sensorValue.un.gyroscope.y;
           float wz = sensorValue.un.gyroscope.z;
-          Serial.print("Roll Rate ");
+          Serial.print(" Rate ");
           Serial.print(wx);
           Serial.print("  Pitch Rate ");
           Serial.print(wy);
-          Serial.print("  Yaw Rate ");
+          Serial.print("  Roll Rate ");
           Serial.println(wz);
           ratesumx += wx;
           ratesumy += wy;
@@ -105,7 +105,7 @@ void loop() {
       if (BNO.getSensorEvent(&sensorValue)) {
         // Make sure the event is calibrated gyro data
         if (sensorValue.sensorId == SH2_ACCELEROMETER) {
-          if (sensorValue.un.accelerometer.y > 13){
+          if (-sensorValue.un.accelerometer.x > 13){
             Serial.println("Switching to State 3");
             //delay(500);
             lastTime = micros();
@@ -122,10 +122,9 @@ void loop() {
     // Make sure the event is calibrated gyro data
       if (sensorValue.sensorId == SH2_GYROSCOPE_CALIBRATED) {
         // Extract angular velocity components (rad/s)
-        float wx = sensorValue.un.gyroscope.x;
-        float wy = sensorValue.un.gyroscope.y;
+        float wx = -sensorValue.un.gyroscope.x;
+        float wy = -sensorValue.un.gyroscope.y;
         float wz = sensorValue.un.gyroscope.z;
-
         // Compute time step (seconds)
         unsigned long currentTime = micros();
         float dt = (currentTime - lastTime) / 1000000.0;
@@ -171,13 +170,13 @@ void loop() {
         Serial.print(pitch);
         Serial.print("  Yaw: ");
         Serial.println(yaw);
-        if(abs(roll) > 90 || abs(yaw) > 90 || abs(pitch) > 90) {
+        if(abs(yaw) > 90 || abs(pitch) > 90) {
           StateMchn = 5;
         }
       }
 
     if (sensorValue.sensorId == SH2_ACCELEROMETER) {
-    if (sensorValue.un.accelerometer.z == 0) {
+    if (sensorValue.un.accelerometer.x == 0) {
       StateMchn = 4; 
       }
     }
@@ -192,8 +191,8 @@ void loop() {
     // Make sure the event is calibrated gyro data
       if (sensorValue.sensorId == SH2_GYROSCOPE_CALIBRATED) {
         // Extract angular velocity components (rad/s)
-        float wx = sensorValue.un.gyroscope.x;
-        float wy = sensorValue.un.gyroscope.y;
+        float wx = -sensorValue.un.gyroscope.x;
+        float wy = -sensorValue.un.gyroscope.y;
         float wz = sensorValue.un.gyroscope.z;
 
         // Compute time step (seconds)
