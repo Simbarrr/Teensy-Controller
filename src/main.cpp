@@ -176,7 +176,7 @@ void loop() {
       }
 
     if (sensorValue.sensorId == SH2_ACCELEROMETER) {
-    if (sensorValue.un.accelerometer.x == 0) {
+    if (sensorValue.un.accelerometer.x > 0) { //DEPLOYS PARACHUTE WHEN HITS FREE FALL. NOT SURE IF SHOULD BE DIFFERENT
       StateMchn = 4; 
       }
     }
