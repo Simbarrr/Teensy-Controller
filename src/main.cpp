@@ -1,8 +1,11 @@
 #include <Arduino.h>              // Core Arduino functions
 #include <Adafruit_BNO08x.h>      // Library for the BNO08x IMU
+#include <PWMServo.h>             // Library for PWM     Servo functions
 
 Adafruit_BNO08x BNO(-1);          // Create BNO object. -1 means no reset pin is used
 sh2_SensorValue_t sensorValue;    // Struct that will hold incoming sensor data
+PWMServo pitchservo;
+PWMServo yawservo;
 
 // Quaternion state variables (current orientation estimate)
 float q0 = 1.0;   // w (scalar part) - start at identity rotation
@@ -12,6 +15,10 @@ float q3 = 0.0;   // z
 float roll = 0.0;
 float yaw = 0.0;
 float pitch = 0.0;
+float kq2 = 10/4;
+float kq3 = 10/4;
+float kwy = 3.4319/4;
+float kwz = 3.4319/4;
 int StateMchn = 0;
 float biasx = 0;
 float biasy = 0;
@@ -36,9 +43,15 @@ void setup() {
   // This tells the chip to send angular velocity data (rad/s)
   BNO.enableReport(SH2_GYROSCOPE_CALIBRATED);
   BNO.enableReport(SH2_ACCELEROMETER);
-  // Initialize time reference for integration
-  lastTime = micros();
-   Serial.println("Setup Complete");
+  // set servos to the gimbal's 0 degree position
+  pitchservo.attach(1);
+  yawservo.attach(2);
+  Serial.println("finish setup");
+  pitchservo.write(90);
+  yawservo.write(90);
+  delay(1000);
+    // Initialize time reference for integration
+  Serial.println("Setup Complete");
 }
 
 void loop() {
@@ -50,6 +63,7 @@ void loop() {
       command.trim();
       if (command == "update") {
         Serial.println("Switching to State 1");
+        lastTime = micros();
         StateMchn = 1;
       }
     }
@@ -101,7 +115,7 @@ void loop() {
     }
 
     case 2: {
-    //Check for acceleromter data in y > 9.81m/s
+    //Check for acceleromter data in y > 13m/s including gravity
       if (BNO.getSensorEvent(&sensorValue)) {
         // Make sure the event is calibrated gyro data
         if (sensorValue.sensorId == SH2_ACCELEROMETER) {
@@ -173,6 +187,13 @@ void loop() {
         if(abs(yaw) > 90 || abs(pitch) > 90) {
           StateMchn = 5;
         }
+        //Apply k matrix to get control angles for servo and write.
+        float gopitch = min(max(57.29578*(-kq2*q2 - kwy*wy),-20),20)-biasy*57.29578;
+        Serial.println(gopitch+90);
+        float goyaw = min(max(57.29578*(-kq3*q3 - kwz*wz),-20),20)-biasz*57.29578;
+        Serial.println(goyaw+90);
+        pitchservo.write(gopitch+90);
+        yawservo.write(goyaw+90);
       }
 
     if (sensorValue.sensorId == SH2_ACCELEROMETER) {
