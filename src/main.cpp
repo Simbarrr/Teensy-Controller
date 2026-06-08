@@ -1,4 +1,4 @@
-#include <Arduino.h>              // Core Arduino functions
+  #include <Arduino.h>              // Core Arduino functions
 #include <Adafruit_BNO08x.h>      // Library for the BNO08x IMU
 #include <PWMServo.h>             // Library for PWM     Servo functions
 
@@ -15,10 +15,10 @@ float q3 = 0.0;   // z
 float roll = 0.0;
 float yaw = 0.0;
 float pitch = 0.0;
-float kq2 = 10/4;
-float kq3 = 10/4;
-float kwy = 3.4319/4;
-float kwz = 3.4319/4;
+float kq2 = 10.0/4.0;
+float kq3 = 10.0/4.0;
+float kwy = 3.4319/4.0;
+float kwz = 3.4319/4.0;
 int StateMchn = 0;
 float biasx = 0;
 float biasy = 0;
@@ -47,9 +47,14 @@ void setup() {
   pitchservo.attach(1);
   yawservo.attach(2);
   Serial.println("finish setup");
-  pitchservo.write(90);
-  yawservo.write(90);
-  delay(1000);
+  pitchservo.write(85);
+  yawservo.write(85);
+  delay(500);
+  yawservo.write(110);
+  pitchservo.write(110);
+  delay(500);
+  yawservo.write(85);
+  pitchservo.write(85);
     // Initialize time reference for integration
   Serial.println("Setup Complete");
 }
@@ -108,9 +113,10 @@ void loop() {
     Serial.print("  Biasz: ");
     Serial.println(biasz);
 
-    Serial.println("Switching to State 2");
-    //delay(500);
-    StateMchn = 2;
+    Serial.println("Switching to State 3");
+    delay(500);
+    lastTime = micros();
+    StateMchn = 3;
     break;
     }
 
@@ -136,8 +142,8 @@ void loop() {
     // Make sure the event is calibrated gyro data
       if (sensorValue.sensorId == SH2_GYROSCOPE_CALIBRATED) {
         // Extract angular velocity components (rad/s)
-        float wx = -sensorValue.un.gyroscope.x;
-        float wy = -sensorValue.un.gyroscope.y;
+        float wx = sensorValue.un.gyroscope.x;
+        float wy = sensorValue.un.gyroscope.y;
         float wz = sensorValue.un.gyroscope.z;
         // Compute time step (seconds)
         unsigned long currentTime = micros();
@@ -148,7 +154,6 @@ void loop() {
         // Quaternion differential equation
         // q_dot = 0.5 * q ⊗ omega
         // -------------------------------
-
         float dq0 = 0.5 * (-q1*wx - q2*wy - q3*wz);
         float dq1 = 0.5 * ( q0*wx + q2*wz - q3*wy);
         float dq2 = 0.5 * ( q0*wy - q1*wz + q3*wx);
@@ -170,37 +175,42 @@ void loop() {
         // ---------------------------------
         // Convert quaternion to Euler angles
         // ---------------------------------
-
+        /*
         roll = 57.29578 * atan2(2*(q0*q1 + q2*q3),
                                       1 - 2*(q1*q1 + q2*q2));
         pitch = 57.29578 * asin(2*(q0*q2 - q3*q1));
         yaw = 57.29578 * atan2(2*(q0*q3 + q1*q2),
                                     1 - 2*(q2*q2 + q3*q3));
       
-        // Print Euler angles in degrees
+         // Print Euler angles in degrees
         Serial.print("Roll: ");
         Serial.print(roll);
         Serial.print("  Pitch: ");
         Serial.print(pitch);
         Serial.print("  Yaw: ");
-        Serial.println(yaw);
-        if(abs(yaw) > 90 || abs(pitch) > 90) {
+        Serial.println(yaw);*/
+
+        if(abs(q3) > 90 || abs(q2) > 90) { //I don't want to convert quaternions to euler angles but idk what to put here
           StateMchn = 5;
         }
+
         //Apply k matrix to get control angles for servo and write.
-        float gopitch = min(max(57.29578*(-kq2*q2 - kwy*wy),-20),20)-biasy*57.29578;
-        Serial.println(gopitch+90);
-        float goyaw = min(max(57.29578*(-kq3*q3 - kwz*wz),-20),20)-biasz*57.29578;
-        Serial.println(goyaw+90);
+        float gopitch = min(max(57.29578*(-kq2*q2 - kwy*wy),-20),20); //not confident on this at all.
+        //Serial.println(gopitch+90);
+        float goyaw = min(max(57.29578*(-kq3*q3 - kwz*wz),-20),20);
+        //Serial.println(goyaw+90);
         pitchservo.write(gopitch+90);
         yawservo.write(goyaw+90);
+        Serial.print(goyaw+90); 
+        Serial.print("    ");
+        Serial.println(gopitch+90);
       }
 
-    if (sensorValue.sensorId == SH2_ACCELEROMETER) {
+    /* if (sensorValue.sensorId == SH2_ACCELEROMETER) {
     if (sensorValue.un.accelerometer.x > 0) { //DEPLOYS PARACHUTE WHEN HITS FREE FALL. NOT SURE IF SHOULD BE DIFFERENT
       StateMchn = 4; 
-      }
-    }
+      } 
+    } */
     }
     break;
     }
@@ -255,12 +265,12 @@ void loop() {
                                     1 - 2*(q2*q2 + q3*q3));
       
         // Print Euler angles in degrees
-        Serial.print("Roll: ");
+        /* Serial.print("Roll: ");
         Serial.print(roll);
         Serial.print("  Pitch: ");
         Serial.print(pitch);
         Serial.print("  Yaw: ");
-        Serial.println(yaw);
+        Serial.println(yaw); */
         }
     }
     break;
@@ -272,4 +282,4 @@ void loop() {
       delay(500);
     }
   }
-}
+}  
